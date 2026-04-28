@@ -1,0 +1,15 @@
+# Models (too large for git, downloaded separately)
+models/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual envs
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/

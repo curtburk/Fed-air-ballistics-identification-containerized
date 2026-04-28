@@ -1,0 +1,48 @@
+# =============================================================================
+# NAWSCL Range Surveillance - Aircraft Classification - Docker Compose
+#
+# Usage:
+#   ./start.sh                     # Start (auto-builds first time)
+#   docker compose down            # Stop
+#
+# Prerequisites:
+#   - NVIDIA Container Toolkit installed
+#   - Model downloaded to ./models/ via download_models.sh
+# =============================================================================
+
+services:
+  china-lake-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nawscl-aircraft-classification
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount models from host -- keeps Docker image small
+      - ./models:/models:ro
+      # Mount sample images for easy access
+      - ./sample-images:/app/sample-images:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - MODEL_PATH=/models/Qwen3-VL-8B-Instruct-FP8
+      - VLLM_MODEL=/models/Qwen3-VL-8B-Instruct-FP8
+      - VLLM_BASE_URL=http://localhost:8090/v1
+      - VLLM_PORT=8090
+      - VLLM_MAX_MODEL_LEN=4096
+      - HOST_IP=${HOST_IP:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s

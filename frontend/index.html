@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAWSCL Range Surveillance | HP ZGX Nano</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --hp-blue: #0096D6;
+            --hp-dark-blue: #024AD8;
+            --range-bg: #0c0e12;
+            --range-surface: #12151b;
+            --range-panel: #181c24;
+            --range-border: #2a3040;
+            --range-border-light: #3a4258;
+            --range-accent: #d4a843;
+            --range-accent-dim: rgba(212, 168, 67, 0.15);
+            --range-amber: #e8a317;
+            --text-primary: #d8dce6;
+            --text-secondary: #8b92a5;
+            --text-muted: #575e70;
+            --success: #3dbd5d;
+            --warning: #e8a317;
+            --danger: #d94040;
+            --manned-color: #3d8bd4;
+            --unmanned-color: #d4a843;
+            --grid-line: rgba(42, 48, 64, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--range-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* Header */
+        .header {
+            position: relative;
+            z-index: 1;
+            background: var(--range-surface);
+            border-bottom: 1px solid var(--range-border);
+            padding: 0.75rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .hp-logo { height: 30px; }
+
+        .header-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--range-border);
+        }
+
+        .header-title h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 0.04em;
+        }
+
+        .header-title span {
+            font-size: 0.7rem;
+            color: var(--range-accent);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-emblem { height: 36px; }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Classification Banner */
+        .classification-banner {
+            position: relative;
+            z-index: 1;
+            background: var(--range-bg);
+            border-top: 2px solid var(--success);
+            border-bottom: 1px solid var(--range-border);
+            padding: 0.35rem;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--success);
+            letter-spacing: 0.12em;
+        }
+
+        /* Main Layout */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 110px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--range-panel);
+            border-right: 1px solid var(--range-border);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .panel {
+            background: var(--range-surface);
+            border: 1px solid var(--range-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--range-accent-dim);
+            border-bottom: 1px solid var(--range-border);
+            padding: 0.6rem 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--range-accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-content { padding: 0.85rem; }
+
+        /* Upload Area */
+        .upload-zone {
+            border: 2px dashed var(--range-border);
+            border-radius: 4px;
+            padding: 1.75rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(212, 168, 67, 0.02);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--range-accent);
+            background: var(--range-accent-dim);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--success);
+            background: rgba(61, 189, 93, 0.08);
+        }
+
+        .upload-zone.has-image {
+            padding: 0.5rem;
+            border-style: solid;
+            border-color: var(--range-accent);
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            filter: grayscale(0.3);
+        }
+
+        .upload-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .upload-text strong { color: var(--range-accent); }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 3px;
+            object-fit: contain;
+        }
+
+        #file-input { display: none; }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 0.85rem; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        .form-label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: var(--range-bg);
+            border: 1px solid var(--range-border);
+            border-radius: 3px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--range-accent);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        /* Analyze Button */
+        .btn-analyze {
+            width: 100%;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, var(--range-accent) 0%, #b8912e 100%);
+            border: none;
+            border-radius: 4px;
+            color: #0c0e12;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-analyze:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(212, 168, 67, 0.25);
+        }
+
+        .btn-analyze:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-analyze.loading {
+            background: var(--range-border);
+            color: var(--text-secondary);
+        }
+
+        /* Results Area */
+        .results-area {
+            padding: 1.25rem 1.5rem;
+            overflow-y: auto;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.4;
+        }
+
+        .empty-state h3 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.35rem;
+        }
+
+        .empty-state p { font-size: 0.85rem; }
+
+        /* Classification Badge */
+        .classification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        .badge-manned {
+            background: rgba(61, 139, 212, 0.15);
+            color: var(--manned-color);
+            border: 1px solid var(--manned-color);
+        }
+
+        .badge-unmanned {
+            background: var(--range-accent-dim);
+            color: var(--range-accent);
+            border: 1px solid var(--range-accent);
+        }
+
+        .badge-undetermined {
+            background: rgba(217, 64, 64, 0.12);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        /* Report */
+        .intel-report {
+            background: var(--range-panel);
+            border: 1px solid var(--range-border);
+            border-radius: 4px;
+            overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .report-header {
+            background: linear-gradient(135deg, rgba(212, 168, 67, 0.1) 0%, rgba(212, 168, 67, 0.02) 100%);
+            border-bottom: 1px solid var(--range-border);
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .report-id {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--range-accent);
+        }
+
+        .report-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .report-classification-tag {
+            font-size: 0.65rem;
+            background: rgba(61, 189, 93, 0.12);
+            color: var(--success);
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            border: 1px solid rgba(61, 189, 93, 0.3);
+        }
+
+        .report-body { padding: 1.25rem; }
+
+        .report-section { margin-bottom: 1.25rem; }
+        .report-section:last-child { margin-bottom: 0; }
+
+        .report-section-title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.4rem;
+            padding-bottom: 0.2rem;
+            border-bottom: 1px solid var(--range-border);
+        }
+
+        .report-field {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 0.4rem;
+            margin-bottom: 0.35rem;
+            font-size: 0.8rem;
+        }
+
+        .report-field-label { color: var(--text-muted); }
+        .report-field-value { color: var(--text-primary); }
+        .report-field-value.highlight { color: var(--range-accent); font-weight: 600; }
+
+        .analysis-content {
+            background: var(--range-bg);
+            border: 1px solid var(--range-border);
+            border-radius: 3px;
+            padding: 0.85rem;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .token-bar {
+            display: flex;
+            gap: 1.5rem;
+            padding: 0.75rem 0.85rem;
+            background: var(--range-bg);
+            border: 1px solid var(--range-border);
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .token-item { display: flex; gap: 0.4rem; }
+        .token-label { color: var(--text-muted); }
+        .token-value { color: var(--text-primary); font-weight: 600; }
+        .token-value.total { color: var(--range-accent); }
+
+        /* Loading Animation */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        .footer {
+            position: relative;
+            z-index: 1;
+            background: var(--range-surface);
+            border-top: 1px solid var(--range-border);
+            padding: 0.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-container { grid-template-columns: 1fr; }
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--range-border);
+            }
+            .results-area { min-height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="/static/hp_logo.png" alt="HP" class="hp-logo">
+            <div class="header-divider"></div>
+            <div class="header-title">
+                <h1>NAWSCL Range Surveillance</h1>
+                <span>Aircraft Classification System // HP ZGX Nano</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <img src="/static/Navy-Emblem.png" alt="US Navy" class="nav-emblem">
+            <div class="status-indicator">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">SYS READY</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="classification-banner">
+        UNCLASSIFIED // FOR DEMONSTRATION PURPOSES ONLY // NAWSCL CHINA LAKE
+    </div>
+
+    <main class="main-container">
+        <aside class="sidebar">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>&#9678;</span> Imagery Upload
+                </div>
+                <div class="panel-content">
+                    <div class="upload-zone" id="upload-zone">
+                        <input type="file" id="file-input" accept="image/*">
+                        <div id="upload-placeholder">
+                            <div class="upload-icon">&#9992;</div>
+                            <div class="upload-text">
+                                <strong>Click to upload</strong> or drag and drop<br>
+                                Range imagery (PNG, JPG)
+                            </div>
+                        </div>
+                        <img id="preview-image" class="preview-image" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span>&#9632;</span> Range Area
+                </div>
+                <div class="panel-content">
+                    <div class="form-group">
+                        <label class="form-label" for="range-select">Select Test Range</label>
+                        <select class="form-select" id="range-select">
+                            <option value="baker_range">Baker Range (R-2508N)</option>
+                            <option value="charlie_range">Charlie Range (R-2508S)</option>
+                            <option value="coso_range">Coso Range Complex</option>
+                            <option value="armitage_field">Armitage Airfield</option>
+                            <option value="superior_valley">Superior Valley Range</option>
+                            <option value="north_range">North Range (R-2502)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="custom-instructions">Additional Guidance</label>
+                        <textarea
+                            class="form-textarea"
+                            id="custom-instructions"
+                            placeholder="Optional: focus areas, specific platform types, test event context..."
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-analyze" id="analyze-btn" disabled>
+                <span class="btn-text">Classify Aircraft</span>
+            </button>
+        </aside>
+
+        <section class="results-area" id="results-area">
+            <div class="empty-state" id="empty-state">
+                <div class="empty-state-icon">&#9708;</div>
+                <h3>No Analysis Generated</h3>
+                <p>Upload range imagery and select a test area to classify aircraft.</p>
+            </div>
+            <div id="report-container" style="display: none;"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand">
+            <svg height="14" viewBox="0 0 100 100" fill="currentColor">
+                <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="4"/>
+                <text x="50" y="62" text-anchor="middle" font-size="32" font-weight="bold">HP</text>
+            </svg>
+            <span>ZGX Nano AI Station</span>
+        </div>
+        <div>
+            <span id="timestamp"></span>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('file-input');
+        const previewImage = document.getElementById('preview-image');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const rangeSelect = document.getElementById('range-select');
+        const customInstructions = document.getElementById('custom-instructions');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const resultsArea = document.getElementById('results-area');
+        const emptyState = document.getElementById('empty-state');
+        const reportContainer = document.getElementById('report-container');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const timestampEl = document.getElementById('timestamp');
+
+        let selectedFile = null;
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            timestampEl.textContent = now.toISOString().replace('T', ' ').substring(0, 19) + 'Z';
+        }
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+
+        // File Upload Handlers
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+                uploadPlaceholder.style.display = 'none';
+                uploadZone.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+            analyzeBtn.disabled = false;
+        }
+
+        // Analysis
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.classList.add('loading');
+            analyzeBtn.innerHTML = '<div class="spinner"></div><span>Classifying...</span>';
+            statusDot.style.background = 'var(--warning)';
+            statusText.textContent = 'PROCESSING';
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('range_area', rangeSelect.value);
+            formData.append('custom_instructions', customInstructions.value);
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Analysis failed: ${response.statusText}`);
+                }
+
+                const report = await response.json();
+                displayReport(report);
+
+                statusDot.style.background = 'var(--success)';
+                statusText.textContent = 'REPORT READY';
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                statusDot.style.background = 'var(--danger)';
+                statusText.textContent = 'ANALYSIS FAILED';
+                alert('Failed to classify aircraft: ' + error.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.classList.remove('loading');
+                analyzeBtn.innerHTML = '<span class="btn-text">Classify Aircraft</span>';
+            }
+        });
+
+        function getBadgeClass(mannedUnmanned) {
+            if (mannedUnmanned === 'MANNED') return 'badge-manned';
+            if (mannedUnmanned === 'UNMANNED') return 'badge-unmanned';
+            return 'badge-undetermined';
+        }
+
+        function getBadgeIcon(mannedUnmanned) {
+            if (mannedUnmanned === 'MANNED') return '\u2708';
+            if (mannedUnmanned === 'UNMANNED') return '\u25C8';
+            return '?';
+        }
+
+        function displayReport(report) {
+            emptyState.style.display = 'none';
+            reportContainer.style.display = 'block';
+
+            const badgeClass = getBadgeClass(report.manned_unmanned);
+            const badgeIcon = getBadgeIcon(report.manned_unmanned);
+
+            reportContainer.innerHTML = `
+                <div class="intel-report">
+                    <div class="report-header">
+                        <div class="report-header-left">
+                            <div class="report-id">${report.report_id}</div>
+                            <div class="report-time">${report.capture_time}</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="classification-badge ${badgeClass}">${badgeIcon} ${report.manned_unmanned}</span>
+                            <span class="report-classification-tag">${report.classification}</span>
+                        </div>
+                    </div>
+                    <div class="report-body">
+                        <div class="report-section">
+                            <div class="report-section-title">Platform Classification</div>
+                            <div class="report-field">
+                                <span class="report-field-label">Status:</span>
+                                <span class="report-field-value highlight">${report.manned_unmanned}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Category:</span>
+                                <span class="report-field-value">${report.platform_category}</span>
+                            </div>
+                            ${report.platform_match ? `
+                            <div class="report-field">
+                                <span class="report-field-label">Platform ID:</span>
+                                <span class="report-field-value highlight">${report.platform_match}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="report-section">
+                            <div class="report-section-title">Position Data [Synthetic]</div>
+                            <div class="report-field">
+                                <span class="report-field-label">Coordinates:</span>
+                                <span class="report-field-value highlight">${report.location.coordinates_dms}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Decimal:</span>
+                                <span class="report-field-value">${report.location.coordinates_decimal.lat}, ${report.location.coordinates_decimal.lon}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Grid Reference:</span>
+                                <span class="report-field-value">${report.location.grid_reference}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Relative:</span>
+                                <span class="report-field-value">${report.location.relative_position}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Range Area:</span>
+                                <span class="report-field-value">${report.location.range_area}</span>
+                            </div>
+                            <div class="report-field">
+                                <span class="report-field-label">Altitude:</span>
+                                <span class="report-field-value">${report.location.altitude_ft.toLocaleString()} ft MSL</span>
+                            </div>
+                        </div>
+
+                        <div class="report-section">
+                            <div class="report-section-title">Full Analysis</div>
+                            <div class="analysis-content">${escapeHtml(report.analysis)}</div>
+                        </div>
+
+                        ${report.token_usage ? `
+                        <div class="report-section">
+                            <div class="report-section-title">Token Consumption</div>
+                            <div class="token-bar">
+                                <div class="token-item">
+                                    <span class="token-label">Prompt:</span>
+                                    <span class="token-value">${report.token_usage.prompt_tokens.toLocaleString()}</span>
+                                </div>
+                                <div class="token-item">
+                                    <span class="token-label">Completion:</span>
+                                    <span class="token-value">${report.token_usage.completion_tokens.toLocaleString()}</span>
+                                </div>
+                                <div class="token-item">
+                                    <span class="token-label">Total:</span>
+                                    <span class="token-value total">${report.token_usage.total_tokens.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Health check
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                if (data.vllm_server === 'ready') {
+                    statusDot.style.background = 'var(--success)';
+                    statusText.textContent = 'SYS READY';
+                } else {
+                    statusDot.style.background = 'var(--warning)';
+                    statusText.textContent = 'MODEL LOADING';
+                }
+            } catch {
+                statusDot.style.background = 'var(--danger)';
+                statusText.textContent = 'CONN ERROR';
+            }
+        }
+
+        checkHealth();
+    </script>
+</body>
+</html>
