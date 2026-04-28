@@ -38,8 +38,8 @@ Each analysis displays **token consumption metrics** (prompt, completion, and to
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/curtburk/china-lake-aircraft-classification.git
-cd china-lake-aircraft-classification
+git clone https://github.com/curtburk/Fed-air-ballistics-identification-containerized.git
+cd Fed-air-ballistics-identification-containerized
 
 # 2. Download the model (~9GB)
 ./download_models.sh
