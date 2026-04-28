@@ -106,8 +106,9 @@ china-lake-aircraft-classification/
 |   |-- hp_logo.png                 # HP branding
 |   +-- Navy-Emblem.png            # US Navy emblem
 |-- sample-images/
-|   |-- F-35C_Lightning_II.png     # Manned aircraft sample
-|   +-- MQ-1_Predator.png         # Unmanned aircraft sample
+|   |-- image-1.png     # Manned aircraft sample
+|   |-- image-2.png     # Unmanned aircraft sample
+|   +-- image-3.png         # Unmanned aircraft sample
 |-- models/
 |   +-- Qwen3-VL-8B-Instruct-FP8/ # Downloaded model (~9GB)
 |-- Dockerfile                      # Based on NVIDIA vLLM container
