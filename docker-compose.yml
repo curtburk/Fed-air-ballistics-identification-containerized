@@ -17,7 +17,7 @@ services:
     ipc: host
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
-    entrypoint: ["bash", "-c", "python3 /patches/fix_kv_cache_align.py && exec vllm serve --model Qwen/Qwen3.6-35B-A3B --max-model-len 32768 --gpu-memory-utilization 0.85 --max-num-batched-tokens 8192 --enable-prefix-caching --speculative-config '{\"method\": \"dflash\", \"model\": \"z-lab/Qwen3.6-35B-A3B-DFlash\", \"num_speculative_tokens\": 15}'"]
+    entrypoint: ["bash", "-c", "exec vllm serve --model Qwen/Qwen3.6-35B-A3B --max-model-len 32768 --gpu-memory-utilization 0.85 --enable-prefix-caching"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
