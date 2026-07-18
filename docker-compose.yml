@@ -41,7 +41,7 @@ services:
       - ./output:/app/output
       - ./uploads:/app/uploads
     environment:
-      - VLLM_URL=${VLLM_URL:-http://172.17.0.1:8091}
+      - VLLM_BASE_URL=http://vllm:8000/v1
       - VLLM_MODEL=Qwen/Qwen3-VL-8B-Instruct-FP8
     restart: unless-stopped
     healthcheck:
