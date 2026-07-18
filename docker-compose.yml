@@ -19,7 +19,7 @@ services:
     entrypoint: >
       bash -c "exec vllm serve
       --model Qwen/Qwen3-VL-8B-Instruct-FP8
-      --max-model-len 4096
+      --max-model-len 16384
       --gpu-memory-utilization 0.85
       --enable-prefix-caching"
     restart: unless-stopped
