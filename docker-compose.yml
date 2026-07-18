@@ -2,7 +2,6 @@ services:
   vllm:
     image: vllm/vllm-openai:v0.20.0-cu130-ubuntu2404
     container_name: china-lake-vllm
-    
     deploy:
       resources:
         reservations:
@@ -12,19 +11,13 @@ services:
               capabilities: [gpu]
     volumes:
       - ${HF_CACHE:-/home/curtburk/.cache/huggingface}:/root/.cache/huggingface
+      - ./patches:/patches
     ports:
       - "8091:8000"
     ipc: host
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
-    command: >
-      --model Qwen/Qwen3.6-35B-A3B
-      --max-model-len 32768
-      --gpu-memory-utilization 0.85
-      --max-num-batched-tokens 8192
-      --enable-prefix-caching
-      --speculative-config '{"method": "dflash", "model": "z-lab/Qwen3.6-35B-A3B-DFlash", "num_speculative_tokens": 15}'
-      
+    entrypoint: ["bash", "-c", "python3 /patches/fix_kv_cache_align.py && exec vllm serve --model Qwen/Qwen3.6-35B-A3B --max-model-len 32768 --gpu-memory-utilization 0.85 --max-num-batched-tokens 8192 --enable-prefix-caching --speculative-config '{\"method\": \"dflash\", \"model\": \"z-lab/Qwen3.6-35B-A3B-DFlash\", \"num_speculative_tokens\": 15}'"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
@@ -54,7 +47,7 @@ services:
       retries: 3
       start_period: 15s
 
-
-      # Verified working on ZGX Nano, driver 580.95.05
+    # Verified working on ZGX Nano, driver 580.95.05
     # vllm/vllm-openai:v0.20.0-cu130-ubuntu2404
     # DO NOT add --kv-cache-dtype fp8_e4m3 (incompatible with flash_attn in this build)
+    # DFlash patch applied via patches/fix_kv_cache_align.py (GCD-based KV cache alignment)
