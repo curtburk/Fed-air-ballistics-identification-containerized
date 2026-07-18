@@ -13,7 +13,7 @@
 #   - NVIDIA Container Toolkit installed
 #   - Model downloaded to ./models/ via download_models.sh
 # =============================================================================
-FROM nvcr.io/nvidia/vllm:26.01-py3
+FROM python:3.12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
