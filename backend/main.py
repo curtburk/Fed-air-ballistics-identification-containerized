@@ -465,12 +465,8 @@ async def analyze_image(image: Image.Image, range_area: str, custom_instructions
     if image.mode != "RGB":
         image = image.convert("RGB")
 
-    # Resize if too large
-    max_size = 1024
-    if max(image.size) > max_size:
-        ratio = max_size / max(image.size)
-        new_size = (int(image.size[0] * ratio), int(image.size[1] * ratio))
-        image = image.resize(new_size, Image.LANCZOS)
+    # Resize to limit vision tokens - prevents vLLM OOM on back-to-back calls
+    image.thumbnail((800, 800), Image.LANCZOS)
 
     # Convert to base64 for vLLM API
     buffer = io.BytesIO()
